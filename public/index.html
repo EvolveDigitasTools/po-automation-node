@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add New SKUs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sampleDownload">
+    <h2>Add New SKUs</h2>
+    <button class="downloadSheet" onclick="window.location.href='/download-sample-sku'">
+    📥 Download Sample SKU Sheet
+    </button>
+  </div>
+
+  <form id="skuForm">
+    <label>Vendor Code *</label>
+    <select id="vendorCode" required></select>
+
+    <label>Company Name *</label>
+    <select id="companyName" required></select>
+
+    <label>Product Category</label>
+    <input type="text" id="productCategory" readonly>
+
+    <label>Created By *</label>
+    <input type="text" id="createdBy" required>
+
+    <label>Upload SKU Sheet *</label>
+    <input type="file" id="skuFile" accept=".xlsx,.xls,.csv" required>
+
+    <button type="button" onclick="uploadFile()">Upload & Preview</button>
+  </form>
+
+  <h3>Preview Data</h3>
+  <table border="1" id="previewTable"></table>
+
+  <button class="submitBtn" onclick="submitSkus()">Submit</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
