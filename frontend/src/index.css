@@ -1,10 +1,38 @@
-/* General Page Style */
 body {
   background-color: #111;
   color: #fff;
   font-family: Arial, sans-serif;
   margin: 0;
-  padding: 20px;
+  overflow-x: hidden;
+}
+
+/* Header */
+.main-header {
+  display: flex;
+  justify-content: normal;
+  width: auto;
+  height: 70px;
+  background-color: #424141;
+  padding: 0 20px;
+  margin: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.header-logo {
+  width: 10%;
+  display: flex;
+  align-items: center;
+}
+
+.header-logo img {
+  width: 100px;
+  height: 50px;
+}
+
+.header-heading {
+  width: 80%;
+  display: flex;
+  justify-content: center;
 }
 
 /* Heading */
@@ -15,7 +43,7 @@ h2 {
 }
 
 h3 {
-  margin-top: 30px;
+  margin-top: 20px;
   color: #40c4a4;
   display: flex;
   justify-content: center;
@@ -86,7 +114,7 @@ button {
   display: block;
   width: 100%;
   padding: 12px;
-  background: #87cefa;
+  background:#f9f9f9;
   color: #000;
   border: none;
   border-radius: 6px;
@@ -97,19 +125,19 @@ button {
 }
 
 button:hover {
-  background: #3fa6f4;
+  background: #348b76;
   color: white;
 }
 
 /* Submit Button */
 .submitBtn {
   max-width: 600px;
-  margin: 0 auto;
+  margin: 40px auto;
 }
 
 /* Preview Table */
 table {
-  width: 90%;
+  width: 95%;
   margin: 20px auto;
   border-collapse: collapse;
   background: #1a1a1a;
@@ -131,3 +159,4 @@ th {
 tr:nth-child(even) {
   background: #222;
 }
+

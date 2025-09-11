@@ -1,0 +1,164 @@
+/* General Page Style */
+body {
+  background-color: #111;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding-bottom: 40px;
+  overflow-x: hidden;
+}
+
+/* Header */
+.main-header {
+  display: flex;
+  justify-content: normal;
+  width: auto;
+  height: 70px;
+  background-color: #424141;
+  padding: 0 20px;
+  margin: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.header-logo {
+  width: 10%;
+  display: flex;
+  align-items: center;
+}
+
+.header-logo img {
+  width: 100px;
+  height: 50px;
+}
+
+.header-heading {
+  width: 80%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Heading */
+h2 {
+  color: #40c4a4;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h3 {
+  margin-top: 30px;
+  color: #40c4a4;
+  display: flex;
+  justify-content: center;
+}
+
+/* Heading and download Sample Sheet Container */
+.sampleDownload {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+
+}
+
+/* Download Sample Sku Sheet Button */
+.downloadSheet {
+  max-width: 280px;
+  height: 40px;
+  padding: 0;
+}
+
+/* Form Layout */
+form {
+  width: 600px;
+  margin: 0 auto;
+  background: #424141;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+/* Labels */
+label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+/* Inputs & Dropdowns */
+input[type="text"],
+input[type="file"],
+select {
+  width: 600px;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
+}
+
+input[type="file"] {
+    height: 23px;
+    width: 590px;
+    background: #222;
+    padding: 5px;
+}
+
+#productCategory, #createdBy {
+  width: 580px;
+}
+
+/* Buttons */
+button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background: #3fa6f4;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+  gap: 20px;
+}
+
+button:hover {
+  background: #2a80c2;
+  color: white;
+}
+
+/* Submit Button */
+.submitBtn {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Preview Table */
+table {
+  width: 90%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #333;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background: #333;
+  color: #40c4a4;
+}
+
+tr:nth-child(even) {
+  background: #222;
+}
