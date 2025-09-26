@@ -160,3 +160,98 @@ tr:nth-child(even) {
   background: #222;
 }
 
+
+/* After Submit Updated List */
+.updated-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #2c2c2c;
+  border-radius: 10px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  color: #f0f0f0;
+}
+
+.updated-container .row-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.row-group strong {
+  color: #40c4a4;
+  margin-right: 10px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  margin-left: 5px;
+}
+
+.inserted-badge {
+  background-color: #40c4a4; /* teal */
+}
+
+.skipped-badge {
+  background-color: #ffb74d; /* orange */
+}
+
+.errors-badge {
+  background-color: #ff6b6b; /* red */
+}
+
+ol {
+  padding-left: 20px;
+  margin: 5px 0 0 0;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin: 20px 0;
+}
+
+progress {
+  width: 100%;
+  max-width: 600px;
+  height: 18px;
+  border-radius: 10px;
+  overflow: hidden;
+  appearance: none;
+}
+
+progress::-webkit-progress-bar {
+  background-color: #555;
+  border-radius: 10px;
+}
+
+progress::-webkit-progress-value {
+  background-color: #40c4a4;
+  border-radius: 10px;
+}
+
+progress::-moz-progress-bar {
+  background-color: #40c4a4;
+  border-radius: 10px;
+}
+
+.progress-container span {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f0f0f0;
+}

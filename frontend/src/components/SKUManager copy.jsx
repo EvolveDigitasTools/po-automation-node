@@ -77,55 +77,54 @@ const SKUManager = () => {
   };
 
   const submitSkus = async () => {
-  if (!vendorCode) {
-    alert("Please select a Vendor Code before submitting.");
-    return;
-  }
-  if (uploadedData.length === 0) {
-    alert("No SKUs uploaded. Please upload a file first.");
-    return;
-  }
+    if (!vendorCode) {
+      alert("Please select a Vendor Code before submitting.");
+      return;
+    }
+    if (uploadedData.length === 0) {
+      alert("No SKUs uploaded. Please upload a file first.");
+      return;
+    }
 
-  setIsUploading(true);
-  setProgress(0);
+    setIsUploading(true);
+    setProgress(0);
 
-  const payload = { vendorCode, companyName, productCategory, createdBy, skus: uploadedData };
+    const payload = { vendorCode, companyName, productCategory, createdBy, skus: uploadedData };
 
-  try {
-    // 🔥 Use EventSource (SSE) instead of fetch
-    const eventSource = new EventSource(`${API_URL}/submit-skus-stream?payload=${encodeURIComponent(JSON.stringify(payload))}`);
+    try {
+      const res = await fetch(`${API_URL}/submit-skus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    // Fake progress animation while waiting
+    let fakeProgress = 0;
+    const interval = setInterval(() => {
+      fakeProgress += 10;
+      setProgress((p) => Math.min(p + 10, 90));
+      if (fakeProgress >= 90) clearInterval(interval);
+    }, 500);
 
-      if (data.progress && data.total) {
-        const percent = Math.round((data.progress / data.total) * 100);
-        setProgress(percent); // ✅ Real progress
-      }
+    const result = await res.json();
+    clearInterval(interval);
+    setProgress(100);
 
-      if (data.done) {
-        setProgress(100);
-        setUploadReport(data);
-        setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        eventSource.close();
-        setIsUploading(false);
-      }
-    };
-
-    eventSource.onerror = () => {
-      console.error("SSE connection error");
-      eventSource.close();
-      setIsUploading(false);
-    };
-
+    if (res.ok) {
+      setUploadReport(result);
+      setFile(null);
+      // setUploadedData([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } else {
+      alert(`Error: ${result.message}`);
+    }
   } catch (err) {
     console.error("Submit failed:", err);
     alert("An unexpected error occurred");
+  } finally {
     setIsUploading(false);
   }
 };
-
 
   return (
     <div>
@@ -230,35 +229,26 @@ const SKUManager = () => {
       )}
       <div className="updated-container">
           {uploadReport?.inserted?.length > 0 && (
-            <div className="row-group">
-              <strong>Inserted:</strong>
-              <span className="badge inserted-badge">{uploadReport.inserted.length}</span>
+            <div className="inserted-rows">
+              <strong>Inserted SKUs:</strong>
               <ol>{uploadReport.inserted.map(sku => <li key={sku}>{sku}</li>)}</ol>
             </div>
           )}
 
           {uploadReport?.skipped?.length > 0 && (
-            <div className="row-group">
-              <strong>Skipped:</strong>
-              <span className="badge skipped-badge">{uploadReport.skipped.length}</span>
+            <div className="inserted-rows">
+              <strong>Skipped SKUs:</strong>
               <ol>{uploadReport.skipped.map(sku => <li key={sku}>{sku}</li>)}</ol>
             </div>
           )}
 
           {uploadReport?.errors?.length > 0 && (
-            <div className="row-group errors-rows">
+            <div className="inserted-rows" style={{ color: "red" }}>
               <strong>Errors:</strong>
-              <span className="badge errors-badge">{uploadReport.errors.length}</span>
-              <ol>
-                {uploadReport.errors.map(e => (
-                  <li key={e.skuCode}>
-                    {e.skuCode}: {e.error}
-                  </li>
-                ))}
-              </ol>
+              <ol>{uploadReport.errors.map(e => <li key={e.skuCode}>{e.skuCode}: {e.error}</li>)}</ol>
             </div>
           )}
-        </div>
+      </div>
     </div>
   );
 };
