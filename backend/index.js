@@ -281,11 +281,146 @@ app.post("/upload-sku", upload.single("skuFile"), async (req, res) => {
 //   }
 // });
 
-// ✅ SSE route for real-time progress
+// ✅ SSE route for real-time progress - Phase 1 Working
+// app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
+//   const payload = JSON.parse(req.query.payload); // frontend sends JSON in query
+//   const { vendorCode, createdBy, skus } = payload;
+//   let filePath = req.query.filePath; // optional if frontend uploaded file
+
+//   if (!Array.isArray(skus)) {
+//     res.status(400).end();
+//     return;
+//   }
+
+//   res.setHeader("Content-Type", "text/event-stream");
+//   res.setHeader("Cache-Control", "no-cache");
+//   res.setHeader("Connection", "keep-alive");
+
+//   const skippedSkus = [];
+//   const insertedSkus = [];
+//   const errors = [];
+
+//   const cleanNumber = (value) => {
+//     if (!value) return null;
+//     const num = parseFloat(value.toString().replace(/[^\d.]/g, ""));
+//     return isNaN(num) ? null : num;
+//   };
+
+//   try {
+//     await db.query("START TRANSACTION");
+
+//     let processed = 0;
+//     const total = skus.length;
+
+//     for (const sku of skus) {
+//       processed++;
+
+//       try {
+//         const skuCode = sku["SKU Code"]?.toString().trim();
+//         if (!skuCode) continue;
+
+//         // 1️⃣ Check if SKU exists
+//         const [[existingSku]] = await db.query("SELECT id FROM sku WHERE skuCode = ?", [skuCode]);
+//         if (existingSku) {
+//           skippedSkus.push(skuCode);
+//           res.write(`data: ${JSON.stringify({ progress: processed, total, status: "skipped", skuCode })}\n\n`);
+//           continue;
+//         }
+
+//         // 2️⃣ Extract SKU fields
+//         const name = sku["Product Title"]?.toString().trim() || null;
+//         const category = sku["Category"]?.toString().trim() || null;
+//         const subCategory = sku["Sub Category"]?.toString().trim() || null;
+//         const hsn = sku["HSN"]?.toString().trim() || null;
+//         const modelNumber = sku["Model Number"]?.toString().trim() || null;
+//         const mrp = cleanNumber(sku["MRP"]);
+//         const sapCode = sku["SAP Code"]?.toString().trim() || null;
+//         const gst = cleanNumber(sku["GST(%)"]);
+
+//         // Dimensions
+//         const size = sku["Size"]?.toString().trim() || null;
+//         const colorFamilycolor = sku["Color Family"]?.toString().trim() || null;
+//         const length = cleanNumber(sku["Prdct L(cm)"]);
+//         const breadth = cleanNumber(sku["Prdct B(cm)"]);
+//         const height = cleanNumber(sku["Prdct H(cm)"]);
+//         const weight = cleanNumber(sku["Wght(kg)"]);
+//         const masterCartonQty = cleanNumber(sku["MC Qty"]);
+//         const masterCartonLengthCm = cleanNumber(sku["MC L(cm)"]);
+//         const masterCartonBreadthCm = cleanNumber(sku["MC B(cm)"]);
+//         const masterCartonHeightCm = cleanNumber(sku["MC H(cm)"]);
+//         const masterCartonWeightKg = cleanNumber(sku["MC Wght(kg)"]);
+
+//         // 3️⃣ Insert SKU
+//         const [skuResult] = await db.query(
+//           `INSERT INTO sku (skuCode, name, vendorId, isCombo, inventoryUpdatedAt)
+//            VALUES (?, ?, (SELECT id FROM vendor WHERE vendorCode=?), 0, NOW())`,
+//           [skuCode, name, vendorCode]
+//         );
+//         const skuId = skuResult.insertId;
+
+//         // 4️⃣ Insert SKU details
+//         const [detailsResult] = await db.query(
+//           `INSERT INTO sku_details
+//            (category, subCategory, hsn, modelNumber, mrp, isVerified, createdBy, skuId, createdAt, updatedAt, sapCode, gst)
+//            VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), NOW(), ?, ?)`,
+//           [category, subCategory, hsn, modelNumber, mrp, createdBy || "system", skuId, sapCode, gst]
+//         );
+//         const skuDetailsId = detailsResult.insertId;
+
+//         // 5️⃣ Insert SKU dimensions
+//         if (length || breadth || height || weight || size || colorFamilycolor || masterCartonQty) {
+//           await db.query(
+//             `INSERT INTO sku_dimensions (
+//               size, colorFamilycolor,
+//               productLengthCm, productBreadthCm, productHeightCm, productWeightKg,
+//               masterCartonQty, masterCartonLengthCm, masterCartonBreadthCm, masterCartonHeightCm, masterCartonWeightKg,
+//               skuDetailsId, createdAt, updatedAt
+//             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+//             [
+//               size, colorFamilycolor,
+//               length, breadth, height, weight,
+//               masterCartonQty, masterCartonLengthCm, masterCartonBreadthCm, masterCartonHeightCm, masterCartonWeightKg,
+//               skuDetailsId
+//             ]
+//           );
+//         }
+
+//         // 6️⃣ Create inventory row
+//         await db.query(`INSERT INTO inventory (skuId, quantity) VALUES (?, 0)`, [skuId]);
+
+//         insertedSkus.push(skuCode);
+//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "inserted", skuCode })}\n\n`);
+
+//       } catch (err) {
+//         errors.push({ skuCode: sku["SKU Code"], error: err.message });
+//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "error", skuCode: sku["SKU Code"], error: err.message })}\n\n`);
+//       }
+//     }
+
+//     await db.query("COMMIT");
+
+//     // ✅ Send final report
+//     res.write(`data: ${JSON.stringify({ done: true, inserted: insertedSkus, skipped: skippedSkus, errors })}\n\n`);
+//     res.end();
+
+//   } catch (err) {
+//     await db.query("ROLLBACK");
+//     console.error("🔥 SSE Fatal error:", err);
+//     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
+//     res.end();
+//   } finally {
+//     if (filePath) {
+//       try { await fs.unlink(filePath); } catch {}
+//     }
+//   }
+// });
+
+
+// ✅ SSE route for real-time progress - Phase 2 Testing
 app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
-  const payload = JSON.parse(req.query.payload); // frontend sends JSON in query
+  const payload = JSON.parse(req.query.payload); 
   const { vendorCode, createdBy, skus } = payload;
-  let filePath = req.query.filePath; // optional if frontend uploaded file
+  let filePath = req.query.filePath; 
 
   if (!Array.isArray(skus)) {
     res.status(400).end();
@@ -319,7 +454,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
         const skuCode = sku["SKU Code"]?.toString().trim();
         if (!skuCode) continue;
 
-        // 1️⃣ Check if SKU exists
         const [[existingSku]] = await db.query("SELECT id FROM sku WHERE skuCode = ?", [skuCode]);
         if (existingSku) {
           skippedSkus.push(skuCode);
@@ -327,7 +461,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
           continue;
         }
 
-        // 2️⃣ Extract SKU fields
         const name = sku["Product Title"]?.toString().trim() || null;
         const category = sku["Category"]?.toString().trim() || null;
         const subCategory = sku["Sub Category"]?.toString().trim() || null;
@@ -337,7 +470,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
         const sapCode = sku["SAP Code"]?.toString().trim() || null;
         const gst = cleanNumber(sku["GST(%)"]);
 
-        // Dimensions
         const size = sku["Size"]?.toString().trim() || null;
         const colorFamilycolor = sku["Color Family"]?.toString().trim() || null;
         const length = cleanNumber(sku["Prdct L(cm)"]);
@@ -350,7 +482,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
         const masterCartonHeightCm = cleanNumber(sku["MC H(cm)"]);
         const masterCartonWeightKg = cleanNumber(sku["MC Wght(kg)"]);
 
-        // 3️⃣ Insert SKU
         const [skuResult] = await db.query(
           `INSERT INTO sku (skuCode, name, vendorId, isCombo, inventoryUpdatedAt)
            VALUES (?, ?, (SELECT id FROM vendor WHERE vendorCode=?), 0, NOW())`,
@@ -358,7 +489,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
         );
         const skuId = skuResult.insertId;
 
-        // 4️⃣ Insert SKU details
         const [detailsResult] = await db.query(
           `INSERT INTO sku_details
            (category, subCategory, hsn, modelNumber, mrp, isVerified, createdBy, skuId, createdAt, updatedAt, sapCode, gst)
@@ -367,7 +497,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
         );
         const skuDetailsId = detailsResult.insertId;
 
-        // 5️⃣ Insert SKU dimensions
         if (length || breadth || height || weight || size || colorFamilycolor || masterCartonQty) {
           await db.query(
             `INSERT INTO sku_dimensions (
@@ -385,7 +514,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
           );
         }
 
-        // 6️⃣ Create inventory row
         await db.query(`INSERT INTO inventory (skuId, quantity) VALUES (?, 0)`, [skuId]);
 
         insertedSkus.push(skuCode);
@@ -397,9 +525,24 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
       }
     }
 
+    // ✅ Run your extra INSERT ... SELECT to fill missing dimensions
+    await db.query(`
+      INSERT INTO sku_dimensions (
+        size, colorFamilycolor, productLengthCm, productBreadthCm, productHeightCm, productWeightKg,
+        masterCartonQty, masterCartonLengthCm, masterCartonBreadthCm, masterCartonHeightCm, masterCartonWeightKg,
+        skuDetailsId, createdAt, updatedAt
+      )
+      SELECT 
+          NULL, NULL, NULL, NULL, NULL, NULL,
+          NULL, NULL, NULL, NULL, NULL,
+          sd.id, NOW(), NOW()
+      FROM sku_details sd
+      LEFT JOIN sku_dimensions d ON d.skuDetailsId = sd.id
+      WHERE d.id IS NULL;
+    `);
+
     await db.query("COMMIT");
 
-    // ✅ Send final report
     res.write(`data: ${JSON.stringify({ done: true, inserted: insertedSkus, skipped: skippedSkus, errors })}\n\n`);
     res.end();
 
@@ -415,7 +558,122 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
   }
 });
 
+
 // Phase 6 - Testing with Real Time Progress
+// app.post("/submit-skus", upload.single("file"), async (req, res) => {
+//   const filePath = req.file?.path;
+//   try {
+//     const { vendorCode, createdBy, skus } = req.body;
+
+//     if (!Array.isArray(skus)) {
+//       return res.status(400).json({ message: "Invalid data format. 'skus' must be an array" });
+//     }
+
+//     // Setup SSE (Server-Sent Events)
+//     res.setHeader("Content-Type", "text/event-stream");
+//     res.setHeader("Cache-Control", "no-cache");
+//     res.setHeader("Connection", "keep-alive");
+//     res.flushHeaders();
+
+//     const total = skus.length;
+//     let processed = 0;
+//     const skippedSkus = [];
+//     const insertedSkus = [];
+//     const errors = [];
+
+//     await db.query("START TRANSACTION");
+
+//     const cleanNumber = (value) => {
+//       if (!value) return null;
+//       const num = parseFloat(value.toString().replace(/[^\d.]/g, ""));
+//       return isNaN(num) ? null : num;
+//     };
+
+//     for (const sku of skus) {
+//       processed++;
+
+//       try {
+//         const skuCode = sku["SKU Code"]?.toString().trim();
+//         if (!skuCode) continue;
+
+//         const [[existingSku]] = await db.query("SELECT id FROM sku WHERE skuCode = ?", [skuCode]);
+//         if (existingSku) {
+//           skippedSkus.push(skuCode);
+//           res.write(`data: ${JSON.stringify({ progress: processed, total, status: "skipped", skuCode })}\n\n`);
+//           continue;
+//         }
+
+//         // --- insert logic (exactly your code, unchanged) ---
+//         const name = sku["Product Title"]?.toString().trim() || null;
+//         const category = sku["Category"]?.toString().trim() || null;
+//         const subCategory = sku["Sub Category"]?.toString().trim() || null;
+//         const hsn = sku["HSN"]?.toString().trim() || null;
+//         const modelNumber = sku["Model Number"]?.toString().trim() || null;
+//         const mrp = cleanNumber(sku["MRP"]);
+//         const sapCode = sku["SAP Code"]?.toString().trim() || null;
+//         const gst = cleanNumber(sku["GST(%)"]);
+
+//         const length = cleanNumber(sku["Prdct L(cm)"]);
+//         const breadth = cleanNumber(sku["Prdct B(cm)"]);
+//         const height = cleanNumber(sku["Prdct H(cm)"]);
+//         const weight = cleanNumber(sku["Wght(kg)"]);
+
+//         const [skuResult] = await db.query(
+//           `INSERT INTO sku (skuCode, name, vendorId, isCombo, inventoryUpdatedAt)
+//            VALUES (?, ?, (SELECT id FROM vendor WHERE vendorCode=?), 0, NOW())`,
+//           [skuCode, name, vendorCode]
+//         );
+//         const skuId = skuResult.insertId;
+
+//         const [detailsResult] = await db.query(
+//           `INSERT INTO sku_details 
+//            (category, subCategory, hsn, modelNumber, mrp, isVerified, createdBy, skuId, createdAt, updatedAt, sapCode, gst)
+//            VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), NOW(), ?, ?)`,
+//           [category, subCategory, hsn, modelNumber, mrp, createdBy || "system", skuId, sapCode, gst]
+//         );
+//         const skuDetailsId = detailsResult.insertId;
+
+//         if (length || breadth || height || weight) {
+//           await db.query(
+//             `INSERT INTO sku_dimensions (
+//               productLengthCm, productBreadthCm, productHeightCm, productWeightKg,
+//               skuDetailsId, createdAt, updatedAt
+//             )
+//             VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+//             [length, breadth, height, weight, skuDetailsId]
+//           );
+//         }
+
+//         await db.query(`INSERT INTO inventory (skuId, quantity) VALUES (?, 0)`, [skuId]);
+
+//         insertedSkus.push(skuCode);
+//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "inserted", skuCode })}\n\n`);
+
+//       } catch (err) {
+//         errors.push({ skuCode: sku["SKU Code"], error: err.message });
+//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "error", skuCode: sku["SKU Code"], error: err.message })}\n\n`);
+//       }
+//     }
+
+//     await db.query("COMMIT");
+
+//     // Send final result
+//     res.write(`data: ${JSON.stringify({ done: true, inserted: insertedSkus, skipped: skippedSkus, errors })}\n\n`);
+//     res.end();
+
+//   } catch (err) {
+//     await db.query("ROLLBACK");
+//     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
+//     res.end();
+//   } finally {
+//     if (filePath) {
+//       try { await fs.unlink(filePath); } catch {}
+//     }
+//   }
+// });
+
+
+// Phase 7 - Testing with Real Time Progress
 app.post("/submit-skus", upload.single("file"), async (req, res) => {
   const filePath = req.file?.path;
   try {
@@ -425,7 +683,6 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
       return res.status(400).json({ message: "Invalid data format. 'skus' must be an array" });
     }
 
-    // Setup SSE (Server-Sent Events)
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -459,7 +716,6 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
           continue;
         }
 
-        // --- insert logic (exactly your code, unchanged) ---
         const name = sku["Product Title"]?.toString().trim() || null;
         const category = sku["Category"]?.toString().trim() || null;
         const subCategory = sku["Sub Category"]?.toString().trim() || null;
@@ -511,9 +767,24 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
       }
     }
 
+    // ✅ Run your extra INSERT ... SELECT to fill missing dimensions
+    await db.query(`
+      INSERT INTO sku_dimensions (
+        size, colorFamilycolor, productLengthCm, productBreadthCm, productHeightCm, productWeightKg,
+        masterCartonQty, masterCartonLengthCm, masterCartonBreadthCm, masterCartonHeightCm, masterCartonWeightKg,
+        skuDetailsId, createdAt, updatedAt
+      )
+      SELECT 
+          NULL, NULL, NULL, NULL, NULL, NULL,
+          NULL, NULL, NULL, NULL, NULL,
+          sd.id, NOW(), NOW()
+      FROM sku_details sd
+      LEFT JOIN sku_dimensions d ON d.skuDetailsId = sd.id
+      WHERE d.id IS NULL;
+    `);
+
     await db.query("COMMIT");
 
-    // Send final result
     res.write(`data: ${JSON.stringify({ done: true, inserted: insertedSkus, skipped: skippedSkus, errors })}\n\n`);
     res.end();
 
@@ -527,5 +798,7 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
     }
   }
 });
+
+
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));
