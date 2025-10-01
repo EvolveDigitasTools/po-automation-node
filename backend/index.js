@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import xlsx from "xlsx";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,6 +6,8 @@ import dotenv from "dotenv";
 // import { fileURLToPath } from "url";
 import db from "./db.js";
 import fs from "fs/promises";
+import upload from "./middleware/upload.js";
+
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ app.use(cors({
 app.use(express.json());
 
 // Multer setup for file uploads
-const upload = multer({ dest: "uploads/" });
+// const upload = multer({ dest: "uploads/" });
 
 // Required for __dirname in ES modules
 // const __filename = fileURLToPath(import.meta.url);
@@ -123,7 +124,7 @@ app.get("/vendors", async (req, res) => {
 // ✅ Upload SKU Sheet & preview - Phase 1 - Currently working
 app.post("/upload-sku", upload.single("skuFile"), async (req, res) => {
   try {
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -419,7 +420,7 @@ app.post("/upload-sku", upload.single("skuFile"), async (req, res) => {
 app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
   const payload = JSON.parse(req.query.payload); 
   const { vendorCode, createdBy, skus } = payload;
-  let filePath = req.query.filePath; 
+  // let filePath = req.query.filePath; 
 
   if (!Array.isArray(skus)) {
     res.status(400).end();
@@ -550,10 +551,10 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
     console.error("🔥 SSE Fatal error:", err);
     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
     res.end();
-  } finally {
-    if (filePath) {
-      try { await fs.unlink(filePath); } catch {}
-    }
+  // } finally {
+  //   if (filePath) {
+  //     try { await fs.unlink(filePath); } catch {}
+  //   }
   }
 });
 
@@ -674,7 +675,7 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
 
 // Phase 7 - Testing with Real Time Progress
 app.post("/submit-skus", upload.single("file"), async (req, res) => {
-  const filePath = req.file?.path;
+  // const filePath = req.file?.path;
   try {
     const { vendorCode, createdBy, skus } = req.body;
 
@@ -791,10 +792,10 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
     await db.query("ROLLBACK");
     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
     res.end();
-  } finally {
-    if (filePath) {
-      try { await fs.unlink(filePath); } catch {}
-    }
+  // } finally {
+  //   if (filePath) {
+  //     try { await fs.unlink(filePath); } catch {}
+  //   }
   }
 });
 
