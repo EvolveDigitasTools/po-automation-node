@@ -3,8 +3,8 @@ import multer from "multer";
 import xlsx from "xlsx";
 import cors from "cors";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+// import path from "path";
+// import { fileURLToPath } from "url";
 import db from "./db.js";
 import fs from "fs/promises";
 
@@ -12,7 +12,7 @@ dotenv.config();
 
 const app = express();
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL,
 }));
 app.use(express.json());
 
@@ -20,14 +20,13 @@ app.use(express.json());
 const upload = multer({ dest: "uploads/" });
 
 // Required for __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-app.use(express.static(path.join(__dirname, "public")));
+// app.use(express.static(path.join(__dirname, "public")));
 
-// Default route (index.html will load automatically)
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send("Backend in running...")
 });
 
 // Dynamically generate & download Sample SKU Sheet
@@ -799,6 +798,6 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 5000;
 
-
-app.listen(4000, () => console.log("Server running on http://localhost:4000"));
+app.listen(PORT, () => console.log(`Server running on http://localhost:"${PORT}`));
