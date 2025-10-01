@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 const SKUManager = () => {
-  const API_URL = "http://localhost:4000";
+  const API_URL = import.meta.env.VITE_FRONTEND_URL;
 
   const [vendorsData, setVendorsData] = useState([]);
   const [vendorCode, setVendorCode] = useState("");
@@ -171,12 +171,14 @@ const SKUManager = () => {
 
         <label>Product Category</label>
         <input 
+          id="productCategory"
           type="text" 
           value={productCategory} 
           readOnly />
 
         <label>Created By *</label>
         <input 
+          id="createdBy"
           type="text" 
           name="createdBy"
           autoComplete="email"

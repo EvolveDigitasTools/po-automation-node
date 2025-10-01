@@ -51,7 +51,7 @@ h3 {
 
 /* Heading and download Sample Sheet Container */
 .sampleDownload {
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
   display: flex;
   gap: 20px;
@@ -69,7 +69,7 @@ h3 {
 
 /* Form Layout */
 form {
-  width: 600px;
+  width: 700px;
   margin: 0 auto;
   background: #424141;
   padding: 20px;
@@ -88,7 +88,7 @@ label {
 input[type="text"],
 input[type="file"],
 select {
-  width: 600px;
+  width: 700px;
   padding: 10px;
   margin-bottom: 15px;
   border: none;
@@ -99,14 +99,16 @@ select {
 }
 
 input[type="file"] {
-    height: 23px;
-    width: 590px;
+    display: flex;
+    align-content: center;
+    width: 690px;
+    height: 27px;
     background: #222;
     padding: 5px;
 }
 
 #productCategory, #createdBy {
-  width: 580px;
+  width: 680px;
 }
 
 /* Buttons */
@@ -131,7 +133,7 @@ button:hover {
 
 /* Submit Button */
 .submitBtn {
-  max-width: 600px;
+  max-width: 700px;
   margin: 40px auto;
 }
 
