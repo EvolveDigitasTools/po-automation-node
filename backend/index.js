@@ -550,119 +550,6 @@ app.get("/submit-skus-stream", upload.single("file"), async (req, res) => {
   }
 });
 
-// Phase 6 - Testing with Real Time Progress
-// app.post("/submit-skus", upload.single("file"), async (req, res) => {
-//   const filePath = req.file?.path;
-//   try {
-//     const { vendorCode, createdBy, skus } = req.body;
-
-//     if (!Array.isArray(skus)) {
-//       return res.status(400).json({ message: "Invalid data format. 'skus' must be an array" });
-//     }
-
-//     // Setup SSE (Server-Sent Events)
-//     res.setHeader("Content-Type", "text/event-stream");
-//     res.setHeader("Cache-Control", "no-cache");
-//     res.setHeader("Connection", "keep-alive");
-//     res.flushHeaders();
-
-//     const total = skus.length;
-//     let processed = 0;
-//     const skippedSkus = [];
-//     const insertedSkus = [];
-//     const errors = [];
-
-//     await db.query("START TRANSACTION");
-
-//     const cleanNumber = (value) => {
-//       if (!value) return null;
-//       const num = parseFloat(value.toString().replace(/[^\d.]/g, ""));
-//       return isNaN(num) ? null : num;
-//     };
-
-//     for (const sku of skus) {
-//       processed++;
-
-//       try {
-//         const skuCode = sku["SKU Code"]?.toString().trim();
-//         if (!skuCode) continue;
-
-//         const [[existingSku]] = await db.query("SELECT id FROM sku WHERE skuCode = ?", [skuCode]);
-//         if (existingSku) {
-//           skippedSkus.push(skuCode);
-//           res.write(`data: ${JSON.stringify({ progress: processed, total, status: "skipped", skuCode })}\n\n`);
-//           continue;
-//         }
-
-//         // --- insert logic (exactly your code, unchanged) ---
-//         const name = sku["Product Title"]?.toString().trim() || null;
-//         const category = sku["Category"]?.toString().trim() || null;
-//         const subCategory = sku["Sub Category"]?.toString().trim() || null;
-//         const hsn = sku["HSN"]?.toString().trim() || null;
-//         const modelNumber = sku["Model Number"]?.toString().trim() || null;
-//         const mrp = cleanNumber(sku["MRP"]);
-//         const sapCode = sku["SAP Code"]?.toString().trim() || null;
-//         const gst = cleanNumber(sku["GST(%)"]);
-
-//         const length = cleanNumber(sku["Prdct L(cm)"]);
-//         const breadth = cleanNumber(sku["Prdct B(cm)"]);
-//         const height = cleanNumber(sku["Prdct H(cm)"]);
-//         const weight = cleanNumber(sku["Wght(kg)"]);
-
-//         const [skuResult] = await db.query(
-//           `INSERT INTO sku (skuCode, name, vendorId, isCombo, inventoryUpdatedAt)
-//            VALUES (?, ?, (SELECT id FROM vendor WHERE vendorCode=?), 0, NOW())`,
-//           [skuCode, name, vendorCode]
-//         );
-//         const skuId = skuResult.insertId;
-
-//         const [detailsResult] = await db.query(
-//           `INSERT INTO sku_details 
-//            (category, subCategory, hsn, modelNumber, mrp, isVerified, createdBy, skuId, createdAt, updatedAt, sapCode, gst)
-//            VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), NOW(), ?, ?)`,
-//           [category, subCategory, hsn, modelNumber, mrp, createdBy || "system", skuId, sapCode, gst]
-//         );
-//         const skuDetailsId = detailsResult.insertId;
-
-//         if (length || breadth || height || weight) {
-//           await db.query(
-//             `INSERT INTO sku_dimensions (
-//               productLengthCm, productBreadthCm, productHeightCm, productWeightKg,
-//               skuDetailsId, createdAt, updatedAt
-//             )
-//             VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-//             [length, breadth, height, weight, skuDetailsId]
-//           );
-//         }
-
-//         await db.query(`INSERT INTO inventory (skuId, quantity) VALUES (?, 0)`, [skuId]);
-
-//         insertedSkus.push(skuCode);
-//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "inserted", skuCode })}\n\n`);
-
-//       } catch (err) {
-//         errors.push({ skuCode: sku["SKU Code"], error: err.message });
-//         res.write(`data: ${JSON.stringify({ progress: processed, total, status: "error", skuCode: sku["SKU Code"], error: err.message })}\n\n`);
-//       }
-//     }
-
-//     await db.query("COMMIT");
-
-//     // Send final result
-//     res.write(`data: ${JSON.stringify({ done: true, inserted: insertedSkus, skipped: skippedSkus, errors })}\n\n`);
-//     res.end();
-
-//   } catch (err) {
-//     await db.query("ROLLBACK");
-//     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
-//     res.end();
-//   } finally {
-//     if (filePath) {
-//       try { await fs.unlink(filePath); } catch {}
-//     }
-//   }
-// });
-
 // Phase 7 - Working with Real Time Progress
 // app.post("/submit-skus", upload.single("file"), async (req, res) => {
 //   // const filePath = req.file?.path;
@@ -919,6 +806,87 @@ app.post("/submit-skus", upload.single("file"), async (req, res) => {
     await db.query("ROLLBACK");
     res.write(`data: ${JSON.stringify({ done: true, error: err.message })}\n\n`);
     res.end();
+  }
+});
+
+// 1. Delete SKUs - Phase 1
+app.get("/delete-sku/:skuCode", async (req, res) => {
+  const { skuCode } = req.params;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    res.write(`data: ${JSON.stringify({ status: "processing", message: "Deleting SKU..." })}\n\n`);
+    
+    await db.query("START TRANSACTION");
+    const [[sku]] = await db.query(`SELECT id FROM sku WHERE skuCode = ?`, [skuCode]);
+    if (!sku) {
+      res.write(`data: ${JSON.stringify({ status: "not_found", message: "SKU not found" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const skuId = sku.id;
+    await db.query(`DELETE FROM inventory WHERE skuId = ?`, [skuId]);
+    res.write(`data: ${JSON.stringify({ status: "progress", message: "Inventory deleted" })}\n\n`);
+    await db.query(`DELETE FROM sku_dimensions WHERE skuDetailsId IN (SELECT id FROM sku_details WHERE skuId=?)`, [skuId]);
+    res.write(`data: ${JSON.stringify({ status: "progress", message: "Dimensions deleted" })}\n\n`);
+    await db.query(`DELETE FROM sku_details WHERE skuId = ?`, [skuId]);
+    res.write(`data: ${JSON.stringify({ status: "progress", message: "Details deleted" })}\n\n`);
+    await db.query(`DELETE FROM sku WHERE id = ?`, [skuId]);
+    res.write(`data: ${JSON.stringify({ status: "progress", message: "SKU deleted" })}\n\n`);
+
+    await db.query("COMMIT");
+    res.write(`data: ${JSON.stringify({ done: true, deleted: [skuCode] })}\n\n`);
+    res.end();
+
+  } catch (err) {
+    await db.query("ROLLBACK");
+    res.write(`data: ${JSON.stringify({ done: true, status: "error", error: err.message })}\n\n`);
+    res.end();
+  }
+});
+
+// GET /get-sku-info?skuCode=XXX
+app.get("/get-sku-info", async (req, res) => {
+  const { skuCode } = req.query;
+
+  if (!skuCode) {
+    return res.status(400).json({ error: "SKU Code is required" });
+  }
+
+  try {
+    const [[sku]] = await db.query(
+      `SELECT 
+          s.skuCode AS 'SKU Code',
+          s.name AS 'Product Name',
+          v.vendorCode AS 'Vendor Code',
+          v.companyName AS 'Vendor Name',
+          sd.category AS 'Category',
+          sd.subCategory AS 'Sub Category',
+          sd.mrp AS 'MRP',
+          sd.modelNumber AS 'Model Number',
+          sd.hsn AS 'HSN',
+          SUM(i.quantity) AS 'Total Quantity'
+       FROM sku s
+       LEFT JOIN vendor v ON s.vendorId = v.id
+       LEFT JOIN sku_details sd ON s.id = sd.skuId
+       LEFT JOIN inventory i ON s.id = i.skuId
+       WHERE s.skuCode = ?
+       GROUP BY s.id, v.vendorCode, v.companyName, sd.category, sd.subCategory, sd.mrp, sd.modelNumber, sd.hsn`,
+      [skuCode]
+    );
+
+    if (!sku) {
+      return res.json({ sku: null });
+    }
+
+    res.json({ sku });
+  } catch (err) {
+    console.error("Failed to fetch SKU info:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
