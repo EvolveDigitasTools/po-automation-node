@@ -9,7 +9,7 @@ body {
 /* Header */
 .main-header {
   display: flex;
-  justify-content: normal;
+  justify-content: space-between;
   width: auto;
   height: 70px;
   background-color: #424141;
@@ -30,10 +30,18 @@ body {
 }
 
 .header-heading {
-  width: 80%;
+  width: 100%;
   display: flex;
   justify-content: center;
+  margin-left: 100px;
 }
+
+.header-button {
+  margin-right: 10px;
+}
+
+/* .lucide, .lucide-x {
+} */
 
 /* Heading */
 h2 {
@@ -255,5 +263,55 @@ progress::-moz-progress-bar {
 .progress-container span {
   font-size: 14px;
   font-weight: bold;
+  color: #f0f0f0;
+}
+
+
+/* Delete SKU Component */
+.delete-sku-container {
+  max-width: 800px;
+  margin: 0 auto;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-form {
+  width: 800px;
+  margin: 0 auto;
+  background: #424141;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  gap: 20px;
+}
+
+.deleteBtn:hover{
+  background-color: #dd272aff;
+  color: white;
+}
+
+.enter-sku-input {
+  display: flex;
+  align-self: center;
+  width: 92% !important;
+  margin-left: 20px;
+}
+
+.form-title {
+  margin: 0 20px 0 20px;
+}
+
+.delete-report {
+  gap: 15px;
+  width: 800px;
+  margin: 20px auto;
+  padding: 0 20px;
+  background: #2c2c2c;
+  border-radius: 10px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
   color: #f0f0f0;
 }

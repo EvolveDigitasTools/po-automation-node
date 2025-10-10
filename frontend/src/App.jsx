@@ -1,14 +1,21 @@
-import { useState } from 'react'
-import './App.css'
-import './index.css'
-import SKUManager from './components/SKUManager'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import "./App.css";
+import "./index.css";
+
+import Header from "./components/Header";
+import AddSKU from "./components/AddSKU";
+import DeleteSKU from "./components/DeleteSKU";
 
 function App() {
   return (
-    <>
-      <SKUManager />
-    </>
-  )
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<AddSKU />} />
+        <Route path="/delete-skus" element={<DeleteSKU />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

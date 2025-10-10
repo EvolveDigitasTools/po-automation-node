@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const SKUManager = () => {
+const AddSKU = () => {
   const API_URL = import.meta.env.VITE_FRONTEND_URL;
 
   const [vendorsData, setVendorsData] = useState([]);
@@ -127,17 +127,8 @@ const SKUManager = () => {
 };
 
 
-  return (
+  return (<>
     <div>
-      <header className="main-header">
-        <div className="header-logo">
-          <img src="/images/plugin-logo.png" alt="logo" />
-        </div>
-        <div className="header-heading">
-          <h2>PO Automation</h2>
-        </div>
-      </header>
-
       <div className="sampleDownload">
         <h2>Add New SKUs</h2>
         <button
@@ -262,7 +253,8 @@ const SKUManager = () => {
           )}
         </div>
     </div>
+    </>
   );
 };
 
-export default SKUManager;
+export default AddSKU;
